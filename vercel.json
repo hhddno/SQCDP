@@ -1,0 +1,19 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/((?!assets|sw\\.js|workbox-.*|registerSW\\.js|manifest\\.webmanifest|favicon\\.svg).*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors 'self' https://bulletonsite.vercel.app https://bulletonsite.com https://www.bulletonsite.com http://localhost:3000"
+        }
+      ]
+    }
+  ]
+}
