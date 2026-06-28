@@ -94,7 +94,7 @@ export function saveTeamBenchmark(b: TeamBenchmark) {
   localStorage.setItem('sqcdp_team_stats', JSON.stringify(all))
 }
 
-export function getWeekDays(_monthKey: string, weekOffset = 0): { date: string; dayNum: number; label: string }[] {
+export function getWeekDays(weekOffset = 0): { date: string; dayNum: number; label: string }[] {
   const { year, month, day } = (() => {
     const now = new Date()
     const p = { timeZone: 'Europe/Paris' as const }

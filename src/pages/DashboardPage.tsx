@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useRef, useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import {
   Download,
@@ -25,13 +25,13 @@ import { Button } from '../components/ui/Button'
 import { useApp } from '../context/AppContext'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
-import type { Axe, DayData } from '../types'
+import type { Axe, Action } from '../types'
+import type { AppNotification } from '../lib/notifications'
 import { api } from '../lib/api'
 import { exportToCSV, importFromCSV } from '../lib/csv'
-import { buildMonthDays } from '../hooks/useAxisData'
-import { computeNotifications } from '../lib/notifications'
 import { logAudit } from '../lib/auditLog'
-import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
+import { getAxeFromNotification, useNotifications } from '../hooks/useNotifications'
+import { useGlobalKeyboardShortcuts } from '../hooks/useGlobalKeyboardShortcuts'
 
 export function DashboardPage() {
   const { axes, actions, commentaires, monthKey, loading, refresh, colors, labels, dataVersion, bumpData } = useApp()
@@ -41,43 +41,41 @@ export function DashboardPage() {
   const [importing, setImporting] = useState(false)
   const [showNotifs, setShowNotifs] = useState(false)
   const [standUp, setStandUp] = useState(false)
-  const [daysByAxe, setDaysByAxe] = useState<Map<number, DayData[]>>(new Map())
+  const { notifications, daysByAxe } = useNotifications()
 
   const [dayDialog, setDayDialog] = useState<{
     axe: Axe
     dayIndex: number
-    days: DayData[]
+    days: import('../types').DayData[]
   } | null>(null)
-  const [monthDetails, setMonthDetails] = useState<{ axe: Axe; days: DayData[] } | null>(null)
-  const [actionDialog, setActionDialog] = useState<{ axe: Axe; actionId?: number } | null>(null)
+  const [monthDetails, setMonthDetails] = useState<{ axe: Axe; days: import('../types').DayData[] } | null>(null)
+  const [actionDialog, setActionDialog] = useState<{ axe: Axe; actionId?: number; defaultDate?: string } | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [showBulk, setShowBulk] = useState(false)
 
-  useEffect(() => {
-    let cancelled = false
-    async function load() {
-      const map = new Map<number, DayData[]>()
-      for (const axe of axes) {
-        map.set(axe.id, await buildMonthDays(axe, monthKey, actions, commentaires))
-      }
-      if (!cancelled) setDaysByAxe(map)
-    }
-    if (axes.length) load()
-    return () => { cancelled = true }
-  }, [axes, monthKey, actions, commentaires, dataVersion])
-
-  const notifications = useMemo(
-    () => computeNotifications(axes, actions, daysByAxe, monthKey),
-    [axes, actions, daysByAxe, monthKey],
-  )
-
-  useKeyboardShortcuts({
+  const shortcuts = useCallback(() => ({
     r: () => refresh(),
     i: () => fileInputRef.current?.click(),
     s: () => setStandUp(true),
     b: () => setShowBulk(true),
     n: () => setShowNotifs(true),
-  })
+  }), [refresh])
+
+  useGlobalKeyboardShortcuts(shortcuts())
+
+  const handleNotifClick = (n: AppNotification) => {
+    setShowNotifs(false)
+    if (n.actionId) {
+      const axe = getAxeFromNotification(axes, n)
+      if (axe) setActionDialog({ axe, actionId: n.actionId })
+      return
+    }
+    if (n.axeId != null) {
+      const axe = axes.find((a) => a.id === n.axeId)
+      const days = daysByAxe.get(n.axeId) ?? []
+      if (axe) setDayDialog({ axe, dayIndex: n.dayIndex ?? 0, days })
+    }
+  }
 
   const handleImport = async (file: File) => {
     setImporting(true)
@@ -179,10 +177,29 @@ export function DashboardPage() {
         )}
       </main>
 
-      <NotificationsPanel open={showNotifs} onClose={() => setShowNotifs(false)} notifications={notifications} />
-      <StandUpOverlay open={standUp} onClose={() => setStandUp(false)} axes={axes} monthKey={monthKey} colors={colors} labels={labels} daysByAxe={daysByAxe} />
-      <DayDialog open={!!dayDialog} onClose={() => setDayDialog(null)} axe={dayDialog?.axe ?? null} dayIndex={dayDialog?.dayIndex ?? null} days={dayDialog?.days ?? []} monthKey={monthKey} onAddAction={() => { if (dayDialog) { setActionDialog({ axe: dayDialog.axe }); setDayDialog(null) } }} onEditAction={(id) => { if (dayDialog) setActionDialog({ axe: dayDialog.axe, actionId: id }) }} onRefresh={() => bumpData()} />
-      <ActionDialog open={!!actionDialog} onClose={() => setActionDialog(null)} axe={actionDialog?.axe ?? null} actionId={actionDialog?.actionId} onSaved={() => bumpData()} />
+      <NotificationsPanel
+        open={showNotifs}
+        onClose={() => setShowNotifs(false)}
+        notifications={notifications}
+        onNotificationClick={handleNotifClick}
+      />
+      <StandUpOverlay
+        open={standUp}
+        onClose={() => setStandUp(false)}
+        axes={axes}
+        monthKey={monthKey}
+        colors={colors}
+        labels={labels}
+        daysByAxe={daysByAxe}
+        actions={actions}
+        onDayClick={(axe, dayIndex, days) => setDayDialog({ axe, dayIndex, days })}
+        onActionClick={(action: Action) => {
+          const axeFound = axes.find((x) => x.id === action.axe_id)
+          if (axeFound) setActionDialog({ axe: axeFound, actionId: action.id })
+        }}
+      />
+      <DayDialog open={!!dayDialog} onClose={() => setDayDialog(null)} axe={dayDialog?.axe ?? null} dayIndex={dayDialog?.dayIndex ?? null} days={dayDialog?.days ?? []} monthKey={monthKey} onAddAction={(dateStr) => { if (dayDialog) { setActionDialog({ axe: dayDialog.axe, defaultDate: dateStr }); setDayDialog(null) } }} onEditAction={(id) => { if (dayDialog) setActionDialog({ axe: dayDialog.axe, actionId: id }) }} onRefresh={() => bumpData()} />
+      <ActionDialog open={!!actionDialog} onClose={() => setActionDialog(null)} axe={actionDialog?.axe ?? null} actionId={actionDialog?.actionId} defaultDate={actionDialog?.defaultDate} onSaved={() => bumpData()} />
       <MonthDetailsDialog open={!!monthDetails} onClose={() => setMonthDetails(null)} axe={monthDetails?.axe ?? null} days={monthDetails?.days ?? []} monthKey={monthKey} />
       <SettingsDialog open={showSettings} onClose={() => setShowSettings(false)} />
       <BulkEntryDialog open={showBulk} onClose={() => setShowBulk(false)} onSaved={() => bumpData()} />

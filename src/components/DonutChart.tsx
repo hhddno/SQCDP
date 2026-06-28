@@ -196,29 +196,30 @@ export function DonutChart({
     draw()
   }, [draw])
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handlePointer = (clientX: number, clientY: number) => {
+    const day = getDayFromPoint(clientX, clientY)
+    setHoveredDay(day)
+    if (canvasRef.current) {
+      canvasRef.current.style.cursor = day !== null ? 'pointer' : 'default'
+    }
+    return day
+  }
+
+  const handleClickEvent = (clientX: number, clientY: number) => {
     const canvas = canvasRef.current
     if (!canvas) return
     const rect = canvas.getBoundingClientRect()
     const scaleX = canvas.width / rect.width
     const scaleY = canvas.height / rect.height
-    const x = (e.clientX - rect.left) * scaleX - SIZE / 2
-    const y = (e.clientY - rect.top) * scaleY - SIZE / 2
+    const x = (clientX - rect.left) * scaleX - SIZE / 2
+    const y = (clientY - rect.top) * scaleY - SIZE / 2
     const dist = Math.sqrt(x * x + y * y)
     if (dist < R2 - 10) {
       onCenterClick?.()
       return
     }
-    const day = getDayFromPoint(e.clientX, e.clientY)
+    const day = getDayFromPoint(clientX, clientY)
     if (day !== null) onDayClick(day)
-  }
-
-  const handleMove = (e: React.MouseEvent) => {
-    const day = getDayFromPoint(e.clientX, e.clientY)
-    setHoveredDay(day)
-    if (canvasRef.current) {
-      canvasRef.current.style.cursor = day !== null ? 'pointer' : 'default'
-    }
   }
 
   return (
@@ -226,10 +227,18 @@ export function DonutChart({
       ref={canvasRef}
       width={SIZE}
       height={SIZE}
-      className="mx-auto w-full max-w-[340px] drop-shadow-lg transition-transform hover:scale-[1.02]"
-      onClick={handleClick}
-      onMouseMove={handleMove}
+      className="mx-auto w-full max-w-[340px] drop-shadow-lg transition-transform hover:scale-[1.02] touch-none"
+      onClick={(e) => handleClickEvent(e.clientX, e.clientY)}
+      onMouseMove={(e) => handlePointer(e.clientX, e.clientY)}
       onMouseLeave={() => setHoveredDay(null)}
+      onTouchStart={(e) => {
+        const t = e.touches[0]
+        if (t) handlePointer(t.clientX, t.clientY)
+      }}
+      onTouchEnd={(e) => {
+        const t = e.changedTouches[0]
+        if (t) handleClickEvent(t.clientX, t.clientY)
+      }}
     />
   )
 }

@@ -11,30 +11,32 @@ import { getParisDateParts } from '../../lib/utils'
 import { ACTION_TEMPLATES, applyTemplate } from '../../lib/templates'
 import { logAudit } from '../../lib/auditLog'
 import { getCurrentEquipe } from '../../lib/team'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 
 interface ActionDialogProps {
   open: boolean
   onClose: () => void
   axe: Axe | null
   actionId?: number | null
+  defaultDate?: string
   onSaved: () => void
 }
 
 type Tab = 'general' | 'pdca' | '8d'
 
-const emptyAction = (axeId: number): Action => ({
+const emptyAction = (axeId: number, createdAt?: string): Action => ({
   axe_id: axeId,
   probleme: '',
   porteur: '',
   statut: 'ouverte',
   equipe: getCurrentEquipe(),
-  created_at: (() => {
+  created_at: createdAt ?? (() => {
     const { year, month, day } = getParisDateParts()
     return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
   })(),
 })
 
-export function ActionDialog({ open, onClose, axe, actionId, onSaved }: ActionDialogProps) {
+export function ActionDialog({ open, onClose, axe, actionId, defaultDate, onSaved }: ActionDialogProps) {
   const { refresh } = useApp()
   const toast = useToast()
   const { user } = useAuth()
@@ -42,20 +44,23 @@ export function ActionDialog({ open, onClose, axe, actionId, onSaved }: ActionDi
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [tab, setTab] = useState<Tab>('general')
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   useEffect(() => {
     if (!open || !axe) return
     setTab('general')
     if (actionId) {
       setLoading(true)
-      api.getAction(actionId).then((a) => { setAction(a); setLoading(false) }).catch(() => {
-        setAction(emptyAction(axe.id))
-        setLoading(false)
-      })
+      api.getAction(actionId).then(setAction).catch(() => {
+        api.loadActions().then((all) => {
+          const found = all.find((a) => a.id === actionId)
+          if (found) setAction(found)
+        })
+      }).finally(() => setLoading(false))
     } else {
-      setAction(emptyAction(axe.id))
+      setAction(emptyAction(axe.id, defaultDate))
     }
-  }, [open, axe, actionId])
+  }, [open, axe, actionId, defaultDate])
 
   const update = (field: keyof Action, value: string) => {
     setAction((prev) => (prev ? { ...prev, [field]: value } : prev))
@@ -84,13 +89,14 @@ export function ActionDialog({ open, onClose, axe, actionId, onSaved }: ActionDi
   }
 
   const handleDelete = async () => {
-    if (!action?.id || !confirm('Supprimer cette action ?')) return
+    if (!action?.id) return
     await api.deleteAction(action.id)
     logAudit('Suppression action', action.probleme, user?.email)
     await refresh()
     onSaved()
     onClose()
     toast.success('Action supprimée')
+    setConfirmDelete(false)
   }
 
   if (!action) return null
@@ -129,6 +135,7 @@ export function ActionDialog({ open, onClose, axe, actionId, onSaved }: ActionDi
   ]
 
   return (
+    <>
     <Modal open={open} onClose={onClose} title={actionId ? 'Modifier l\'action' : 'Nouvelle action'} size="lg">
       {loading ? (
         <div className="flex justify-center py-12">
@@ -216,7 +223,7 @@ export function ActionDialog({ open, onClose, axe, actionId, onSaved }: ActionDi
 
           <div className="flex flex-wrap justify-between gap-3 pt-4">
             {action.id && (
-              <Button variant="danger" onClick={handleDelete}>
+              <Button variant="danger" onClick={() => setConfirmDelete(true)}>
                 <Trash2 size={16} />
                 Supprimer
               </Button>
@@ -231,5 +238,15 @@ export function ActionDialog({ open, onClose, axe, actionId, onSaved }: ActionDi
         </div>
       )}
     </Modal>
+    <ConfirmDialog
+      open={confirmDelete}
+      title="Supprimer l'action"
+      message="Cette action sera définitivement supprimée."
+      confirmLabel="Supprimer"
+      danger
+      onConfirm={handleDelete}
+      onCancel={() => setConfirmDelete(false)}
+    />
+    </>
   )
 }

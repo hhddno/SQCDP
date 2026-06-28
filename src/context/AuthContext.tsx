@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { getSupabase, isSupabaseConfigured } from '../lib/supabase'
+import { setApiAccessToken } from '../lib/api/authBridge'
 
 interface AuthContextValue {
   user: User | null
@@ -21,6 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isConfigured) {
+      setApiAccessToken(null)
       setLoading(false)
       return
     }
@@ -28,11 +30,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s)
       setUser(s?.user ?? null)
+      setApiAccessToken(s?.access_token ?? null)
       setLoading(false)
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s)
       setUser(s?.user ?? null)
+      setApiAccessToken(s?.access_token ?? null)
       setLoading(false)
     })
     return () => subscription.unsubscribe()
@@ -49,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await getSupabase().auth.signOut()
+    setApiAccessToken(null)
   }
 
   return (

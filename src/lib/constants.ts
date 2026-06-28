@@ -1,6 +1,8 @@
 import type { Axe, StateColors, StateLabels } from '../types'
 
-export const API_BASE_URL = 'https://sqcdp-api.onrender.com'
+export const API_BASE_URL =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '') ||
+  'https://sqcdp-api.onrender.com'
 
 export const DEFAULT_AXES: Axe[] = [
   { id: 1, key: 'S', label: 'Sécurité' },

@@ -7,6 +7,7 @@ import { useApp } from '../../context/AppContext'
 import { api } from '../../lib/api'
 import { saveDayEtat } from '../../hooks/useAxisData'
 import { dateForDay, formatDateJJMMAA } from '../../lib/utils'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 
 interface DayDialogProps {
   open: boolean
@@ -15,7 +16,7 @@ interface DayDialogProps {
   dayIndex: number | null
   days: DayData[]
   monthKey: string
-  onAddAction: () => void
+  onAddAction: (dateStr: string) => void
   onEditAction: (id: number) => void
   onRefresh: () => void
 }
@@ -35,6 +36,7 @@ export function DayDialog({
   const [saving, setSaving] = useState(false)
   const [commentText, setCommentText] = useState('')
   const [showCommentForm, setShowCommentForm] = useState(false)
+  const [confirmDeleteComment, setConfirmDeleteComment] = useState<number | null>(null)
 
   if (!axe || dayIndex === null) return null
 
@@ -73,13 +75,14 @@ export function DayDialog({
   }
 
   const handleDeleteComment = async (id: number) => {
-    if (!confirm('Supprimer ce commentaire ?')) return
     await api.deleteComment(id)
     await refresh()
     onRefresh()
+    setConfirmDeleteComment(null)
   }
 
   return (
+    <>
     <Modal
       open={open}
       onClose={onClose}
@@ -113,12 +116,10 @@ export function DayDialog({
             <h3 className="font-semibold text-slate-700">
               Actions ({day.actions.length})
             </h3>
-            {isToday && (
-              <Button variant="action" className="!py-2 !text-xs" onClick={onAddAction}>
-                <Plus size={14} />
-                Ajouter
-              </Button>
-            )}
+            <Button variant="action" className="!py-2 !text-xs" onClick={() => onAddAction(dateStr)}>
+              <Plus size={14} />
+              Ajouter
+            </Button>
           </div>
           {day.actions.length === 0 ? (
             <p className="text-sm italic text-slate-400">Aucune action ce jour</p>
@@ -138,9 +139,9 @@ export function DayDialog({
               ))}
             </div>
           )}
-          {!isToday && (
+          {!isToday && day.actions.length === 0 && (
             <p className="mt-2 text-xs text-slate-400">
-              Les actions ne peuvent être créées que pour le jour actuel.
+              Vous pouvez créer une action rattachée à ce jour.
             </p>
           )}
         </div>
@@ -179,7 +180,7 @@ export function DayDialog({
                 <p className="text-sm text-slate-700">{c.content}</p>
                 {c.id && (
                   <button
-                    onClick={() => handleDeleteComment(c.id!)}
+                    onClick={() => setConfirmDeleteComment(c.id!)}
                     className="shrink-0 text-delete hover:text-[#a21d1d]"
                   >
                     <Trash2 size={16} />
@@ -195,5 +196,15 @@ export function DayDialog({
         </div>
       </div>
     </Modal>
+    <ConfirmDialog
+      open={confirmDeleteComment !== null}
+      title="Supprimer le commentaire"
+      message="Ce commentaire sera définitivement supprimé."
+      confirmLabel="Supprimer"
+      danger
+      onConfirm={() => confirmDeleteComment && handleDeleteComment(confirmDeleteComment)}
+      onCancel={() => setConfirmDeleteComment(null)}
+    />
+    </>
   )
 }

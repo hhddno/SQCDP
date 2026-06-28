@@ -23,6 +23,7 @@ import { exportMonthlyPDF } from '../lib/pdfExport'
 import { getCurrentEquipe } from '../lib/team'
 import { getAuditLog } from '../lib/auditLog'
 import { formatMonthLabel } from '../lib/utils'
+import { DailyReportsHistory } from '../components/DailyReportsHistory'
 
 export function AnalyticsPage() {
   const { axes, actions, commentaires, monthKey, colors, labels } = useApp()
@@ -171,6 +172,8 @@ export function AnalyticsPage() {
               </div>
             )}
           </div>
+
+          <DailyReportsHistory equipe={getCurrentEquipe()} />
 
           <div className="rounded-2xl bg-white p-6 shadow-md">
             <h2 className="font-semibold text-primary mb-4">Journal d'audit (local)</h2>

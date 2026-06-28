@@ -13,6 +13,7 @@ export interface DayState {
   axe_id: number
   date: string
   etat: EtatApi
+  equipe?: string
 }
 
 export interface Comment {
@@ -20,6 +21,7 @@ export interface Comment {
   axe_id: number
   date: string
   content: string
+  equipe?: string
 }
 
 export interface Action {
@@ -84,3 +86,33 @@ export interface AxisStats {
 }
 
 export type DayType = 'work' | 'weekend' | 'holiday'
+
+export interface SiteRecord {
+  id?: string
+  name: string
+}
+
+export interface EquipeRecord {
+  id?: string
+  name: string
+  site?: string
+  active?: boolean
+}
+
+export interface Organisation {
+  site: string
+  equipes: EquipeRecord[]
+}
+
+export interface DailyReportRecord {
+  id?: string
+  date: string
+  equipe: string
+  site?: string
+  timer_sec: number
+  roulette?: Record<string, string>
+  checklist?: { id: string; label: string; done: boolean }[]
+  today_states?: { axe_key: string; etat: string }[]
+  summary_text: string
+  created_at?: string
+}

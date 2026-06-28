@@ -10,6 +10,7 @@ interface WheelProps {
   participants: string[]
   spinTrigger: number
   onResult: (winner: string) => void
+  targetWinner?: string
 }
 
 function polarToCartesian(angleDeg: number) {
@@ -34,7 +35,7 @@ function labelPosition(index: number, total: number) {
   return { x: CX + dist * Math.cos(rad), y: CY + dist * Math.sin(rad), rotate: angle }
 }
 
-export function RouletteWheel({ participants, spinTrigger, onResult }: WheelProps) {
+export function RouletteWheel({ participants, spinTrigger, onResult, targetWinner }: WheelProps) {
   const [rotation, setRotation] = useState(0)
   const [transition, setTransition] = useState(false)
 
@@ -43,7 +44,16 @@ export function RouletteWheel({ participants, spinTrigger, onResult }: WheelProp
 
     const sectionAngle = 360 / participants.length
     const spins = 5 + Math.random() * 5
-    const finalAngle = Math.random() * 360
+    let finalAngle: number
+
+    if (targetWinner && participants.includes(targetWinner)) {
+      const winnerIndex = participants.indexOf(targetWinner)
+      const centerAngle = winnerIndex * sectionAngle + sectionAngle / 2
+      finalAngle = (360 - centerAngle) % 360
+    } else {
+      finalAngle = Math.random() * 360
+    }
+
     const totalRotation = rotation + spins * 360 + finalAngle
 
     setTransition(true)
@@ -52,7 +62,10 @@ export function RouletteWheel({ participants, spinTrigger, onResult }: WheelProp
     const timer = setTimeout(() => {
       const adjusted = (360 - (finalAngle % 360)) % 360
       const winnerIndex = Math.floor(adjusted / sectionAngle) % participants.length
-      onResult(participants[winnerIndex])
+      const winner = targetWinner && participants.includes(targetWinner)
+        ? targetWinner
+        : participants[winnerIndex]
+      onResult(winner)
       setTransition(false)
     }, 4000)
 

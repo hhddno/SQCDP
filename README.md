@@ -1,11 +1,19 @@
 # SQCDP WebApp — Premium
 
+[![CI](https://github.com/dariohd/SQCDP/actions/workflows/ci.yml/badge.svg)](https://github.com/dariohd/SQCDP/actions/workflows/ci.yml)
+[![Voir en ligne](https://img.shields.io/badge/Voir%20en%20ligne-→-0ea5e9?style=for-the-badge)](https://sqcdp.vercel.app)
+
+![Aperçu du tableau de bord SQCDP](docs/screenshot.png)
+
 > Backend API : Express + PostgreSQL (dossier `sqcdp-api` en local, déployé sur Render). Schéma : `database/schema.sql`.
 
 Application SQCDP (Sécurité, Qualité, Coût, Délai, Personnel) — React + Vite + TypeScript.
 
+| | |
+|---|---|
 | **URL production** | https://sqcdp.vercel.app |
 | **Dépôt** | [github.com/dariohd/SQCDP](https://github.com/dariohd/SQCDP) |
+| **Architecture** | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 
 **Sans base de données côté client** : données via API Render + cache localStorage (offline/PWA).
 
@@ -30,9 +38,11 @@ Application SQCDP (Sécurité, Qualité, Coût, Délai, Personnel) — React + V
 
 ```bash
 npm install
-cp .env.example .env   # optionnel — Supabase auth
+cp .env.example .env   # optionnel — Supabase auth + URL API
 npm run dev
 ```
+
+Variables : voir [.env.example](.env.example) (`VITE_SUPABASE_*`, `VITE_API_BASE_URL`).
 
 ## Scripts
 
@@ -48,13 +58,14 @@ Fichiers dans `demo-data/` — importer dans l'ordre 01 → 04 pour tester la sy
 
 ## Déploiement
 
-GitHub Actions (`.github/workflows/ci.yml`) : build, tests E2E, GitHub Pages.
+- **Vercel** : https://sqcdp.vercel.app (auto-deploy `main`)
+- **GitHub Actions** : build, tests E2E, GitHub Pages
 
-Secrets : `SUPABASE_URL`, `SUPABASE_KEY`, `VITE_API_BASE_URL` (optionnel)
+Secrets CI : `SUPABASE_URL`, `SUPABASE_KEY`, `VITE_API_BASE_URL` (optionnel)
 
 ## Base de données
 
-Le schéma PostgreSQL attendu est dans [`database/schema.sql`](../database/schema.sql).
+Le schéma PostgreSQL attendu est dans [`database/schema.sql`](../database/schema.sql) (monorepo local).
 Le contrat REST est documenté dans [`database/API.md`](../database/API.md).
 
 **Backend API** : voir [`sqcdp-api/README.md`](../sqcdp-api/README.md) (Node + Express + PostgreSQL).

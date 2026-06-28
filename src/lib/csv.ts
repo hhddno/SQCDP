@@ -1,5 +1,6 @@
 import type { Action, Axe, Comment, DayState, EtatApi } from '../types'
 import { api } from './api'
+import { getCurrentEquipe } from './team'
 
 const SEP = ';'
 
@@ -59,6 +60,13 @@ export async function importFromCSV(file: File, axes: Axe[]): Promise<ImportResu
           categorie: row.Champ4 || undefined,
           statut: (row.Statut === 'fermee' ? 'fermee' : 'ouverte'),
           created_at: date || undefined,
+          equipe: row.Equipe || getCurrentEquipe(),
+          cause: row.Cause || undefined,
+          solution: row.Solution || undefined,
+          pdca_plan: row.PDCA_Plan || undefined,
+          pdca_do: row.PDCA_Do || undefined,
+          pdca_check: row.PDCA_Check || undefined,
+          pdca_act: row.PDCA_Act || undefined,
         }
         if (!action.probleme || !action.porteur) {
           result.errors.push(`Action incomplète: ${action.probleme || '?'}`)
@@ -72,7 +80,7 @@ export async function importFromCSV(file: File, axes: Axe[]): Promise<ImportResu
           result.errors.push('Commentaire incomplet')
           continue
         }
-        await api.addComment({ axe_id: axeId, date, content })
+        await api.addComment({ axe_id: axeId, date, content, equipe: getCurrentEquipe() })
         result.comments++
       } else if (type === 'Etat') {
         const etat = row.Champ1.trim().toLowerCase() as EtatApi
@@ -93,6 +101,11 @@ export async function importFromCSV(file: File, axes: Axe[]): Promise<ImportResu
   return result
 }
 
+const EXPORT_HEADERS = [
+  'Type', 'Axe', 'Date', 'Champ1', 'Champ2', 'Champ3', 'Champ4', 'Statut',
+  'Equipe', 'Cause', 'Solution', 'PDCA_Plan', 'PDCA_Do', 'PDCA_Check', 'PDCA_Act',
+]
+
 export function exportToCSV(
   axes: Axe[],
   actions: Action[],
@@ -102,7 +115,7 @@ export function exportToCSV(
   const lines: string[] = []
   const sep = SEP
 
-  lines.push(['Type', 'Axe', 'Date', 'Champ1', 'Champ2', 'Champ3', 'Champ4', 'Statut'].join(sep))
+  lines.push(EXPORT_HEADERS.join(sep))
 
   actions.forEach((a) => {
     const axe = axes.find((x) => x.id === a.axe_id)
@@ -116,6 +129,13 @@ export function exportToCSV(
         a.echeance ?? '',
         a.categorie ?? '',
         a.statut,
+        a.equipe ?? '',
+        a.cause ?? '',
+        a.solution ?? '',
+        a.pdca_plan ?? '',
+        a.pdca_do ?? '',
+        a.pdca_check ?? '',
+        a.pdca_act ?? '',
       ].join(sep),
     )
   })
@@ -123,14 +143,14 @@ export function exportToCSV(
   commentaires.forEach((c) => {
     const axe = axes.find((x) => x.id === c.axe_id)
     lines.push(
-      ['Commentaire', axe?.label ?? String(c.axe_id), c.date, c.content, '', '', '', ''].join(sep),
+      ['Commentaire', axe?.label ?? String(c.axe_id), c.date, c.content, '', '', '', '', c.equipe ?? '', '', '', '', '', '', ''].join(sep),
     )
   })
 
   dayStates.forEach((d) => {
     const axe = axes.find((x) => x.id === d.axe_id)
     lines.push(
-      ['Etat', axe?.label ?? String(d.axe_id), d.date, d.etat, '', '', '', ''].join(sep),
+      ['Etat', axe?.label ?? String(d.axe_id), d.date, d.etat, '', '', '', '', d.equipe ?? '', '', '', '', '', '', ''].join(sep),
     )
   })
 

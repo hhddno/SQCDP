@@ -29,6 +29,8 @@ export function RoulettePage() {
   const [timerRunning, setTimerRunning] = useState(false)
   const [history, setHistory] = useState<SpinHistory[]>([])
   const [showHistory, setShowHistory] = useState(false)
+  const [uniqueWinners, setUniqueWinners] = useState(true)
+  const [roleTargets, setRoleTargets] = useState<Record<string, string>>({})
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
@@ -63,8 +65,20 @@ export function RoulettePage() {
       toast.warning('Ajoutez au moins un participant.')
       return
     }
+    if (uniqueWinners && participants.length < ROULETTE_ROLES.length) {
+      toast.warning(`Ajoutez au moins ${ROULETTE_ROLES.length} participants pour des rôles distincts.`)
+      return
+    }
     if (spinning) return
 
+    let targets: Record<string, string> = {}
+    if (uniqueWinners) {
+      const shuffled = [...participants].sort(() => Math.random() - 0.5)
+      ROULETTE_ROLES.forEach((role, i) => {
+        targets[role.id] = shuffled[i]
+      })
+    }
+    setRoleTargets(targets)
     setSpinning(true)
     setResults({})
     completedRef.current = 0
@@ -187,9 +201,20 @@ export function RoulettePage() {
               ))}
             </div>
           </div>
-          {participants.length > 0 && participants.length < ROULETTE_ROLES.length && (
+          {participants.length > 0 && (
+            <label className="mt-4 flex items-center justify-center gap-2 text-sm text-slate-600">
+              <input
+                type="checkbox"
+                checked={uniqueWinners}
+                onChange={(e) => setUniqueWinners(e.target.checked)}
+                className="rounded"
+              />
+              Rôles distincts (5 personnes différentes)
+            </label>
+          )}
+          {participants.length > 0 && participants.length < ROULETTE_ROLES.length && !uniqueWinners && (
             <p className="mt-4 text-center text-sm text-slate-500">
-              {participants.length} participant(s) — les rôles peuvent être attribués plusieurs fois si nécessaire.
+              {participants.length} participant(s) — les rôles peuvent être attribués plusieurs fois.
             </p>
           )}
         </motion.div>
@@ -234,6 +259,7 @@ export function RoulettePage() {
                 <RouletteWheel
                   participants={participants}
                   spinTrigger={spinTrigger}
+                  targetWinner={uniqueWinners ? roleTargets[role.id] : undefined}
                   onResult={(winner) => handleWheelResult(role.id, winner)}
                 />
               </div>

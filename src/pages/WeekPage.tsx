@@ -9,10 +9,10 @@ import { buildMonthDays } from '../hooks/useAxisData'
 import type { DayData, EtatKey } from '../types'
 
 export function WeekPage() {
-  const { axes, actions, commentaires, colors, labels, monthKey } = useApp()
+  const { axes, actions, commentaires, colors, labels } = useApp()
   const [weekOffset, setWeekOffset] = useState(0)
   const [grid, setGrid] = useState<Map<string, DayData>>(new Map())
-  const weekDays = getWeekDays(monthKey, weekOffset)
+  const weekDays = getWeekDays(weekOffset)
 
   useEffect(() => {
     let cancelled = false
@@ -38,16 +38,19 @@ export function WeekPage() {
   return (
     <AppLayout>
       <main className="mx-auto max-w-[1400px] px-4 py-8">
-        <div className="flex items-center justify-center gap-4 mb-8">
-          <Button variant="secondary" className="!p-2" onClick={() => setWeekOffset((w) => w - 1)}>
-            <ChevronLeft size={20} />
-          </Button>
-          <h1 className="text-xl font-bold text-primary">
-            Semaine du {weekDays[0].label} au {weekDays[6].label}
-          </h1>
-          <Button variant="secondary" className="!p-2" onClick={() => setWeekOffset((w) => w + 1)}>
-            <ChevronRight size={20} />
-          </Button>
+        <div className="mb-8 text-center">
+          <div className="flex items-center justify-center gap-4">
+            <Button variant="secondary" className="!p-2" onClick={() => setWeekOffset((w) => w - 1)}>
+              <ChevronLeft size={20} />
+            </Button>
+            <h1 className="text-xl font-bold text-primary">
+              Semaine du {weekDays[0].label} au {weekDays[6].label}
+            </h1>
+            <Button variant="secondary" className="!p-2" onClick={() => setWeekOffset((w) => w + 1)}>
+              <ChevronRight size={20} />
+            </Button>
+          </div>
+          <p className="mt-2 text-sm text-slate-500">Semaine courante (défilement ±1 semaine)</p>
         </div>
 
         <motion.div

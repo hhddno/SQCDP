@@ -33,4 +33,5 @@ export function setEquipe(equipe: string) {
   const s = getSettings()
   const equipes = s.equipes.includes(equipe) ? s.equipes : [...s.equipes, equipe]
   saveSettings({ equipe, equipes })
+  window.dispatchEvent(new CustomEvent('sqcdp-equipe-change', { detail: equipe }))
 }
