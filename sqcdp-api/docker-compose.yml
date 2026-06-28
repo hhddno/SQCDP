@@ -1,0 +1,25 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sqcdp
+      POSTGRES_PASSWORD: sqcdp
+      POSTGRES_DB: sqcdp
+    ports:
+      - "5432:5432"
+    volumes:
+      - sqcdp_pg:/var/lib/postgresql/data
+
+  api:
+    build: .
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://sqcdp:sqcdp@db:5432/sqcdp
+      CORS_ORIGINS: http://localhost:5173,http://localhost:4173
+      DEFAULT_SITE: Site principal
+    depends_on:
+      - db
+
+volumes:
+  sqcdp_pg:

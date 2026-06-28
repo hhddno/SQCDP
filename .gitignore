@@ -24,3 +24,12 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Playwright
+test-results/
+playwright-report/
+
+# Monorepo API (dossier sqcdp-api/)
+sqcdp-api/node_modules
+sqcdp-api/dist
+sqcdp-api/.env
