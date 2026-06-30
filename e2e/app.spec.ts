@@ -10,12 +10,15 @@ test('landing page is public', async ({ page }) => {
 test('public demo loads monthly dashboard', async ({ page }) => {
   await page.goto(DEMO_ROUTES.mois)
   await expect(page.getByText(/Mode démo/i)).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Mois' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'SQCDP' })).toBeVisible()
+  await expect(page.getByText(/Tableau de bord mensuel/i)).toBeVisible()
+  await expect(page.getByRole('navigation').getByRole('button', { name: 'Mois', exact: true })).toBeVisible()
 })
 
 test('demo home shows usine dupont', async ({ page }) => {
   await page.goto(DEMO_ROUTES.home)
-  await expect(page.getByText(/Usine Dupont/i)).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'SQCDP' })).toBeVisible()
+  await expect(page.locator('main').getByText('Usine Dupont')).toBeVisible()
 })
 
 test('app home loads with SQCDP title', async ({ page }) => {
